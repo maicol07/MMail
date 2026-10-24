@@ -1,0 +1,28 @@
+[versions]
+agp = "9.4.1"
+kotlin = "2.4.21"
+compose = "1.13.0-alpha02"
+activity = "1.13.0"
+materialKolor = "5.0.1"
+symbolCraft = "0.5.0"
+androidx-compose = "1.13.0-alpha03"
+
+[libraries]
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-animation = { module = "org.jetbrains.compose.animation:animation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose" }
+compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-compose" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose" }
+androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+symbolCraft = { id = "io.github.kingsword09.symbolcraft", version.ref = "symbolCraft" }
