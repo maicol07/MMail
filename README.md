@@ -36,3 +36,9 @@ The theme follows the system, with dynamic colors on Android 12+ and a green see
 There are no providers, authentication, email connections, or persistent storage. Sending adds a message to the Sent folder for the current session only. Attachments are sample filenames with no associated files. Mailbox changes reset when the app restarts or the Android Activity is recreated.
 
 Theme and motion reference: [Material 3 Expressive in Compose](https://android-developers.googleblog.com/2025/05/androidify-building-delightful-ui-with-compose.html).
+
+## License
+
+Copyright (c) 2026 Maicol Battistini.
+
+MMail is licensed under the GNU General Public License version 3 only (`GPL-3.0-only`). See [LICENSE](LICENSE) for the full terms. Third-party dependencies and assets retain their respective licenses.
