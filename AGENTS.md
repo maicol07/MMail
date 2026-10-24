@@ -4,7 +4,7 @@ Android-only demo email client built with Kotlin 2.4.21, Compose Multiplatform 1
 
 ## Conventions
 
-- Write all documentation, code identifiers, comments, UI strings, sample data, and test fixtures in English. Preserve proper names and package names.
+- Write documentation, code identifiers, comments, default UI strings, and sample data in English. Italian UI translations belong in `composeResources/values-it`; localized test expectations may use Italian. Preserve proper names and package names.
 - Shared UI and logic live in `sharedUI/src/commonMain`; screens in `ui/views/mailbox`, reusable components in `ui/components`, and the theme in `ui/theme`.
 - `data/Mailbox.kt` contains sample data and immutable transformations. `App.kt` manages in-memory demo state. Do not add providers or network access without an explicit request.
 - Keep UI strings in Compose Resources.

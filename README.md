@@ -27,6 +27,8 @@ Host tests cover search and filters, marking messages as read, starring, moving 
 
 ## Demo behavior
 
+The UI follows the device language, with English as the default and Italian translations. Sample emails remain in English.
+
 The UI includes search, filters in a bottom sheet opened from the top bar, starred messages, archiving, trash with undo, reading, and composing with replies. Attachments use rounded action chips. The layout shows the message list and detail from 840 dp, and permanent folder navigation from 1200 dp. Below these thresholds, it uses one screen at a time and a drawer, with shared transitions for avatars, subjects, and attachments.
 
 The theme follows the system, with dynamic colors on Android 12+ and a green seed color on earlier versions. Navigation and list animations use Material Expressive motion tokens and respect the system animation scale. Material Symbols Rounded icons are generated with SymbolCraft.
