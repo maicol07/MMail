@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.Icons
@@ -153,7 +154,13 @@ fun App(provider: MailProvider) {
                         }
                     },
                 ) { padding ->
-                    Row(Modifier.fillMaxSize().padding(padding)) {
+                    val layoutDirection = LocalLayoutDirection.current
+                    val contentPadding = PaddingValues(
+                        start = padding.calculateStartPadding(layoutDirection),
+                        top = padding.calculateTopPadding(),
+                        end = padding.calculateEndPadding(layoutDirection),
+                    )
+                    Row(Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(contentPadding)) {
                         if (permanentNavigation) {
                             FolderNavigation(mailbox, folder, selectFolder, { composing = true }, account.orEmpty(), signOut,
                                 Modifier.width(264.dp).fillMaxHeight())
@@ -236,7 +243,7 @@ fun App(provider: MailProvider) {
                                     perform { account = provider.signIn(); refreshMailbox() }
                                 }, shapes = ButtonDefaults.shapes()) { Text(stringResource(Res.string.sign_in_outlook)) }
                             }
-                            SharedTransitionLayout(Modifier.weight(1f).padding(end = if (twoPanes) 16.dp else 0.dp, bottom = 12.dp)) {
+                            SharedTransitionLayout(Modifier.weight(1f).padding(end = if (twoPanes) 16.dp else 0.dp)) {
                                 val fadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
                                 val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
                                 val transition = updateTransition(selectedId, label = "Mail navigation")

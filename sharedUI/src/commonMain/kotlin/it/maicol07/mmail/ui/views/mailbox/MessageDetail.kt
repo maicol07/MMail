@@ -31,7 +31,8 @@ fun SharedTransitionScope.MessageDetail(
 ) {
     Surface(modifier, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Text(

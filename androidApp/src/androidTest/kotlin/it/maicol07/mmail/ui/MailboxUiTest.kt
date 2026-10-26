@@ -3,6 +3,7 @@ package it.maicol07.mmail.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.text.intl.LocaleList
@@ -56,9 +57,17 @@ class MailboxUiTest(
     private fun showApp() {
         compose.setContent {
             DeviceConfigurationOverride(DeviceConfigurationOverride.Locales(LocaleList(languageTag))) {
-                Box(Modifier.requiredSize(400.dp, 800.dp)) { App(provider) }
+                Box(Modifier.requiredSize(400.dp, 800.dp).testTag("mailbox-root")) { App(provider) }
             }
         }
+    }
+
+    @Test
+    fun messageListExtendsToTheBottomOfThePage() {
+        showApp()
+        val page = compose.onNodeWithTag("mailbox-root").getUnclippedBoundsInRoot()
+        val list = compose.onNodeWithTag("message-list").getUnclippedBoundsInRoot()
+        assertEquals(page.bottom.value, list.bottom.value, 0.5f)
     }
 
     @Test

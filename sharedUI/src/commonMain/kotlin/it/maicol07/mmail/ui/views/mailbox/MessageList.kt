@@ -70,7 +70,10 @@ fun SharedTransitionScope.MessageList(
                 }
             },
             state = scrollState,
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(
+                start = 12.dp, end = 12.dp,
+                bottom = 96.dp + WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding(),
+            ),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             item {
