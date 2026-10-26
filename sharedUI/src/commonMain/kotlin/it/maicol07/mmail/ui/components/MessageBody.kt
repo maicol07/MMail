@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -22,7 +20,7 @@ fun MessageBody(text: String, html: String?, plainText: Boolean, options: Render
     val minimumHeight = with(LocalDensity.current) { if (waitingForHtml) previousHeight.toDp() else 0.dp }
     Box(modifier.heightIn(min = minimumHeight).onSizeChanged { previousHeight = it.height }) {
         if (html == null || plainText) {
-            SelectionContainer { Text(text, style = MaterialTheme.typography.bodyLarge) }
+            SelectionContainer { PlainTextMessageBody(text, Modifier) }
         } else {
             HtmlMessageBody(html, Modifier.fillMaxWidth().testTag("message-html"), options, onReady = { htmlReady = true })
         }
