@@ -26,6 +26,8 @@ fun Composer(
     recipient: String, subject: String, body: String,
     onRecipient: (String) -> Unit, onSubject: (String) -> Unit, onBody: (String) -> Unit,
     onClose: () -> Unit, onSend: () -> Unit,
+    error: String?,
+    enabled: Boolean,
 ) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
@@ -46,6 +48,7 @@ fun Composer(
                     OutlinedTextField(
                         value = recipient, onValueChange = onRecipient, label = { Text(stringResource(Res.string.recipient)) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        enabled = enabled,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         isError = recipient.isNotBlank() && !isValidRecipient(recipient),
                         supportingText = {
@@ -55,23 +58,26 @@ fun Composer(
                     OutlinedTextField(
                         value = subject, onValueChange = onSubject, label = { Text(stringResource(Res.string.subject)) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        enabled = enabled,
                     )
                     OutlinedTextField(
                         value = body, onValueChange = onBody, placeholder = { Text(stringResource(Res.string.body)) },
                         modifier = Modifier.fillMaxWidth(), minLines = 7,
+                        enabled = enabled,
                     )
                 }
                 Spacer(Modifier.height(16.dp))
                 Text(stringResource(Res.string.send_notice), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 Spacer(Modifier.height(12.dp))
                 Button(
                     shapes = ButtonDefaults.shapes(),
-                    onClick = onSend, enabled = isValidRecipient(recipient) && subject.isNotBlank() && body.isNotBlank(),
+                    onClick = onSend, enabled = enabled && isValidRecipient(recipient) && subject.isNotBlank() && body.isNotBlank(),
                     modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
                 ) {
                     Icon(Icons.SendW500Rounded, null)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(Res.string.send_demo))
+                    Text(stringResource(Res.string.send_message))
                 }
             }
         }

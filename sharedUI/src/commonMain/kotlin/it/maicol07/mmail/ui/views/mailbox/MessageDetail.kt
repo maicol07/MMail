@@ -56,18 +56,12 @@ fun SharedTransitionScope.MessageDetail(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                    Text(
-                        stringResource(Res.string.message_demo), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.labelMedium,
-                    )
-                }
                 Text(
                     mail.subject, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Medium,
                     modifier = mailSharedBounds(mail.id to "subject", visibilityScope),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SenderAvatar(mail.sender, mail.id, mailSharedBounds(mail.id to "avatar", visibilityScope))
+                    SenderAvatar(mail.sender, mail.id.hashCode(), mailSharedBounds(mail.id to "avatar", visibilityScope))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(mail.sender, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text(mail.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -76,8 +70,8 @@ fun SharedTransitionScope.MessageDetail(
                     Text(mail.time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(mail.body, style = MaterialTheme.typography.bodyLarge)
-                mail.attachment?.let { attachment ->
-                    AttachmentChip(attachment, onAttachment, mailSharedBounds(mail.id to "attachment", visibilityScope))
+                if (mail.hasAttachments) {
+                    AttachmentChip(stringResource(Res.string.open_attachments), onAttachment, mailSharedBounds(mail.id to "attachment", visibilityScope))
                 }
                 if (mail.folder != Folder.Sent && mail.folder != Folder.Trash) {
                     FilledTonalButton(onClick = onReply, modifier = Modifier.heightIn(min = 48.dp)) {

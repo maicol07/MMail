@@ -35,7 +35,15 @@ kotlin {
             implementation(libs.materialKolor)
         }
         commonTest.dependencies { implementation(kotlin("test")) }
-        androidMain.dependencies { implementation(libs.androidx.activityCompose) }
+        androidMain.dependencies {
+            implementation(libs.androidx.activityCompose)
+            implementation(libs.msal)
+            implementation(libs.okhttp)
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.json)
+            implementation(libs.okhttp.mockwebserver)
+        }
     }
 }
 

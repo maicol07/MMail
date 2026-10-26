@@ -36,6 +36,9 @@ fun FolderNavigation(
     selected: Folder,
     onSelect: (Folder) -> Unit,
     onCompose: () -> Unit,
+    account: String,
+    onSignOut: () -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 16.dp, vertical = 24.dp).verticalScroll(rememberScrollState())) {
@@ -83,24 +86,15 @@ fun FolderNavigation(
             )
         }
         Spacer(Modifier.height(40.dp))
-        Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(Res.string.demo_badge), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Text(stringResource(Res.string.demo_note), style = MaterialTheme.typography.titleLarge)
-                Text(
-                    stringResource(Res.string.demo_explanation), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Spacer(Modifier.height(32.dp))
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            SenderAvatar("Maicol", 0)
+            SenderAvatar(account, 0)
             Spacer(Modifier.width(12.dp))
             Column {
-                Text("Maicol", style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(Res.string.demo_account), style = MaterialTheme.typography.bodySmall)
+                Text(account, style = MaterialTheme.typography.titleSmall)
+                Text("Outlook", style = MaterialTheme.typography.bodySmall)
             }
         }
+        TextButton(onClick = onRefresh) { Text(stringResource(Res.string.refresh_mail)) }
+        TextButton(onClick = onSignOut) { Text(stringResource(Res.string.sign_out)) }
     }
 }

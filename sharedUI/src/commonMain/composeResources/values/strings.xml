@@ -1,4 +1,7 @@
 <resources>
+    <string name="loading_mail">Loading mail…</string>
+    <string name="load_more">Load more messages</string>
+    <string name="loaded_messages_hint">Counts and search cover loaded messages and previews.</string>
     <string name="app_name">MMail</string>
     <string name="inbox">Inbox</string>
     <string name="starred">Starred</string>
@@ -13,10 +16,6 @@
     <string name="filters_active">Filters: %1$s</string>
     <string name="filter_description">Choose which messages to show in the current folder.</string>
     <string name="show_messages">Show messages</string>
-    <string name="demo_account">Demo account</string>
-    <string name="demo_badge">DEMO</string>
-    <string name="demo_note">A space for your mail.</string>
-    <string name="demo_explanation">You are exploring MMail with sample emails. Everything stays in this session.</string>
     <string name="all">All</string>
     <string name="unread">Unread</string>
     <string name="attachments">With attachments</string>
@@ -36,8 +35,6 @@
     <string name="restore">Move to inbox</string>
     <string name="reply">Reply</string>
     <string name="to_recipient">To: %1$s</string>
-    <string name="attachment_demo">Demo attachment</string>
-    <string name="attachment_notice">Attachments are examples and contain no actual files.</string>
     <string name="archived">Message archived</string>
     <string name="trashed">Message moved to trash</string>
     <string name="restored">Message moved to inbox</string>
@@ -48,11 +45,23 @@
     <string name="subject">Subject</string>
     <string name="body">Write something…</string>
     <string name="invalid_recipient">Enter a valid email address</string>
-    <string name="send_demo">Simulate sending</string>
-    <string name="send_notice">Simulated sending. No email will be sent.</string>
-    <string name="message_sent">Message added to sent mail</string>
     <string name="draft_notice">Your text stays available while the app is open.</string>
     <string name="draft_resumed">Resumed your existing draft</string>
     <string name="personal_mail">YOUR MAIL</string>
-    <string name="message_demo">Sample email</string>
+    <string name="working">Connecting to Outlook…</string>
+    <string name="connect_outlook">Connect your Microsoft account to read and send mail.</string>
+    <string name="outlook_configuration_required">Outlook is not configured. Add the Microsoft app registration to local.properties and rebuild.</string>
+    <string name="sign_in_outlook">Sign in with Microsoft</string>
+    <string name="sign_out">Sign out</string>
+    <string name="refresh_mail">Refresh mail</string>
+    <string name="open_attachments">Open attachments in Outlook</string>
+    <string name="send_message">Send</string>
+    <string name="error_authentication">Microsoft sign-in is required. Sign in again to continue.</string>
+    <string name="error_network">Unable to reach Outlook. Check your connection and try again.</string>
+    <string name="error_throttled">Outlook is limiting requests. Wait before trying again.</string>
+    <string name="error_rejected">Outlook rejected this operation. Check account permissions and try again.</string>
+    <string name="error_response">Outlook returned an unsupported response. Refresh the mailbox.</string>
+    <string name="error_send_uncertain">Sending could not be confirmed. Check Sent mail in Outlook before sending again.</string>
+    <string name="message_sent">Outlook accepted the message for sending</string>
+    <string name="send_notice">This message will be sent from your Microsoft account.</string>
 </resources>

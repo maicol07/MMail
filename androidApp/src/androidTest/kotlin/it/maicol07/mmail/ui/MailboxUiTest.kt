@@ -8,7 +8,10 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.unit.dp
 import it.maicol07.mmail.App
-import it.maicol07.mmail.data.demoMessages
+import it.maicol07.mmail.data.*
+import org.junit.Assert.assertEquals
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,54 +25,96 @@ class MailboxUiTest(
     private val showMessages: String,
     private val activeFilters: String,
     private val back: String,
-    private val attachmentNotice: String,
+    private val attachments: String,
 ) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun locales(): List<Array<String>> = listOf(
-            arrayOf("en", "Unread", "Filters", "Show messages", "Filters: Unread", "Back to messages",
-                "Attachments are examples and contain no actual files."),
-            arrayOf("it", "Da leggere", "Filtri", "Mostra messaggi", "Filtri: Da leggere", "Torna ai messaggi",
-                "Gli allegati sono esempi e non contengono file reali."),
+            arrayOf("en", "Unread", "Filters", "Show messages", "Filters: Unread", "Back to messages", "Open attachments in Outlook"),
+            arrayOf("it", "Da leggere", "Filtri", "Mostra messaggi", "Filtri: Da leggere", "Torna ai messaggi", "Apri allegati in Outlook"),
         )
     }
 
     @get:Rule
     val compose = createComposeRule()
+    private val provider = TestMailProvider()
+    private val originalLocale = java.util.Locale.getDefault()
+
+    @Before
+    fun setResourceLocale() {
+        // Compose Resources uses Locale.current in addition to the overridden Android configuration.
+        java.util.Locale.setDefault(java.util.Locale.forLanguageTag(languageTag))
+    }
+
+    @After
+    fun restoreResourceLocale() {
+        java.util.Locale.setDefault(originalLocale)
+    }
+
+    private fun showApp() {
+        compose.setContent {
+            DeviceConfigurationOverride(DeviceConfigurationOverride.Locales(LocaleList(languageTag))) {
+                Box(Modifier.requiredSize(400.dp, 800.dp)) { App(provider) }
+            }
+        }
+    }
 
     @Test
     fun filterSheetAndUnreadNavigationKeepTheOpenedMessageVisible() {
-        compose.setContent {
-            DeviceConfigurationOverride(DeviceConfigurationOverride.Locales(LocaleList(languageTag))) {
-                Box(Modifier.requiredSize(400.dp, 800.dp)) { App() }
-            }
-        }
+        showApp()
         compose.onNodeWithText(unread).assertDoesNotExist()
         compose.onNodeWithContentDescription(filters).performClick()
         compose.onNodeWithText(unread).performClick()
         compose.onNodeWithText(showMessages).performClick()
         compose.onNodeWithContentDescription(activeFilters).assertExists()
-
-        compose.onNodeWithText(demoMessages.first().subject).performClick()
+        compose.onNodeWithText(provider.message.subject).performClick()
         compose.onNodeWithContentDescription(back).assertIsDisplayed()
-        compose.onNodeWithText(demoMessages.first().body).assertExists()
+        compose.onNodeWithText(provider.message.body).assertExists()
         compose.onNodeWithContentDescription(back).performClick()
-        compose.onNodeWithText(demoMessages.first().subject).assertDoesNotExist()
+        compose.onNodeWithText(provider.message.subject).assertDoesNotExist()
+    }
+
+    @Test
+    fun olderMessagesLoadOnlyWhenRequested() {
+        showApp()
+        compose.onNodeWithText(provider.olderMessage.subject).assertDoesNotExist()
+        val loadMore = if (languageTag == "en") "Load more messages" else "Carica altri messaggi"
+        compose.onNodeWithText(loadMore).performClick()
+        compose.onNodeWithText(provider.olderMessage.subject).assertIsDisplayed()
+        compose.onNodeWithText(loadMore).assertDoesNotExist()
     }
 
     @Test
     fun sharedTransitionRoundTripAndAttachmentChipRemainInteractive() {
-        compose.setContent {
-            DeviceConfigurationOverride(DeviceConfigurationOverride.Locales(LocaleList(languageTag))) {
-                Box(Modifier.requiredSize(400.dp, 800.dp)) { App() }
-            }
-        }
-        compose.onNodeWithText(demoMessages.first().subject).performClick()
-        compose.onNodeWithText("Lake weekend.pdf").performScrollTo().assertHasClickAction().performClick()
-        compose.onNodeWithText(attachmentNotice).assertExists()
+        showApp()
+        compose.onNodeWithText(provider.message.subject).performClick()
+        compose.onNodeWithText(attachments).performScrollTo().assertHasClickAction().performClick()
+        compose.runOnIdle { assertEquals(1, provider.attachmentsOpened) }
         compose.onNodeWithContentDescription(back).performClick()
-        compose.onNodeWithText(demoMessages.first().subject).assertIsDisplayed()
-        compose.onNodeWithText("Lake weekend.pdf").assertHasClickAction()
+        compose.onNodeWithText(provider.message.subject).assertIsDisplayed()
+        compose.onNodeWithText(attachments).assertHasClickAction()
     }
+}
+
+private class TestMailProvider : MailProvider {
+    val message = Mail("test-id", "Test sender", "sender@example.com", "Test subject", "Test body", "10:00", unread = true, hasAttachments = true)
+    val olderMessage = message.copy(id = "older-id", subject = "Older subject", unread = false)
+    private var mailbox = MailboxState(listOf(message.copy(body = "Preview")), mapOf(Folder.Inbox to "next-page"))
+    var attachmentsOpened = 0
+    override val configured = true
+    override suspend fun restoreAccount(): String = "test@example.com"
+    override suspend fun signIn(): String = "test@example.com"
+    override suspend fun signOut() = Unit
+    override suspend fun loadMailbox(): MailboxState = mailbox
+    override suspend fun loadMore(mailbox: MailboxState, folder: Folder): MailboxState {
+        this.mailbox = mailbox.copy(messages = mailbox.messages + olderMessage, nextPages = mailbox.nextPages - folder)
+        return this.mailbox
+    }
+    override suspend fun loadMessage(mail: Mail): Mail = mail.copy(body = message.body)
+    override suspend fun markRead(id: String) { mailbox = mailbox.markRead(id) }
+    override suspend fun setStarred(id: String, starred: Boolean) { mailbox = mailbox.toggleStar(id) }
+    override suspend fun move(id: String, destination: Folder) { mailbox = mailbox.move(id, destination) }
+    override suspend fun send(recipient: String, subject: String, body: String, replyTo: String?) = Unit
+    override fun openAttachments(mail: Mail) { attachmentsOpened++ }
 }

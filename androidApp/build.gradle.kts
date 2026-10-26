@@ -1,7 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.android.application)
 }
+
+val localConfiguration = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+val outlookClientId = localConfiguration.getProperty("outlook.clientId", "")
+val outlookSignatureHash = localConfiguration.getProperty("outlook.signatureHash", "")
 
 android {
     namespace = providers.gradleProperty("appPackageName").get()
@@ -17,12 +25,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "OUTLOOK_CLIENT_ID", "\"${outlookClientId.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        buildConfigField("String", "OUTLOOK_SIGNATURE_HASH", "\"${outlookSignatureHash.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        manifestPlaceholders["outlookSignatureHash"] = outlookSignatureHash.ifBlank { "unconfigured" }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
 }
 
 dependencies {

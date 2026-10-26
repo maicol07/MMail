@@ -37,8 +37,9 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun SharedTransitionScope.MessageList(
-    messages: List<Mail>, folder: Folder, filter: MailFilter, query: String, selectedId: Int?,
-    onOpen: (Mail) -> Unit, onStar: (Int) -> Unit, onAttachment: () -> Unit,
+    messages: List<Mail>, folder: Folder, filter: MailFilter, query: String, selectedId: String?,
+    onOpen: (Mail) -> Unit, onStar: (String) -> Unit, onAttachment: (Mail) -> Unit,
+    hasMore: Boolean, onLoadMore: () -> Unit,
     scrollState: LazyListState, visibilityScope: AnimatedVisibilityScope?,
     modifier: Modifier = Modifier,
 ) {
@@ -52,6 +53,10 @@ fun SharedTransitionScope.MessageList(
                     stringResource(Res.string.unread_count, messages.count { it.unread }),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(stringResource(Res.string.loaded_messages_hint), style = MaterialTheme.typography.bodySmall)
+            if (hasMore) {
+                TextButton(onClick = onLoadMore) { Text(stringResource(Res.string.load_more)) }
+            }
         }
         if (messages.isEmpty()) {
             MailEmptyState(
@@ -93,7 +98,7 @@ fun SharedTransitionScope.MessageList(
                             Modifier.clickable(onClick = { onOpen(mail) }).padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            SenderAvatar(mail.sender, mail.id, mailSharedBounds(mail.id to "avatar", visibilityScope))
+                            SenderAvatar(mail.sender, mail.id.hashCode(), mailSharedBounds(mail.id to "avatar", visibilityScope))
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
@@ -114,8 +119,8 @@ fun SharedTransitionScope.MessageList(
                                     mail.body.replace("\n", " "), maxLines = 2, overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                mail.attachment?.let { attachment ->
-                                    AttachmentChip(attachment, onAttachment, mailSharedBounds(mail.id to "attachment", visibilityScope))
+                                if (mail.hasAttachments) {
+                                    AttachmentChip(stringResource(Res.string.open_attachments), { onAttachment(mail) }, mailSharedBounds(mail.id to "attachment", visibilityScope))
                                 }
                             }
                             MailAction(

@@ -1,4 +1,7 @@
 <resources>
+    <string name="loading_mail">Caricamento della posta…</string>
+    <string name="load_more">Carica altri messaggi</string>
+    <string name="loaded_messages_hint">Conteggi e ricerca riguardano i messaggi caricati e le loro anteprime.</string>
     <string name="app_name">MMail</string>
     <string name="inbox">Posta in arrivo</string>
     <string name="starred">Preferiti</string>
@@ -13,10 +16,6 @@
     <string name="filters_active">Filtri: %1$s</string>
     <string name="filter_description">Scegli quali messaggi mostrare nella cartella corrente.</string>
     <string name="show_messages">Mostra messaggi</string>
-    <string name="demo_account">Account dimostrativo</string>
-    <string name="demo_badge">DEMO</string>
-    <string name="demo_note">Uno spazio per la tua posta.</string>
-    <string name="demo_explanation">Stai esplorando MMail con email di esempio. Tutto resta in questa sessione.</string>
     <string name="all">Tutte</string>
     <string name="unread">Da leggere</string>
     <string name="attachments">Con allegati</string>
@@ -36,8 +35,6 @@
     <string name="restore">Riporta in arrivo</string>
     <string name="reply">Rispondi</string>
     <string name="to_recipient">A: %1$s</string>
-    <string name="attachment_demo">Allegato dimostrativo</string>
-    <string name="attachment_notice">Gli allegati sono esempi e non contengono file reali.</string>
     <string name="archived">Messaggio archiviato</string>
     <string name="trashed">Messaggio spostato nel cestino</string>
     <string name="restored">Messaggio riportato in arrivo</string>
@@ -48,11 +45,23 @@
     <string name="subject">Oggetto</string>
     <string name="body">Scrivi qualcosa…</string>
     <string name="invalid_recipient">Inserisci un indirizzo email valido</string>
-    <string name="send_demo">Simula invio</string>
-    <string name="send_notice">Invio simulato. Nessuna email verrà spedita.</string>
-    <string name="message_sent">Messaggio aggiunto alla posta inviata</string>
     <string name="draft_notice">Il testo resta disponibile finché l’app rimane aperta.</string>
     <string name="draft_resumed">Ripresa la composizione già iniziata</string>
     <string name="personal_mail">LA TUA POSTA</string>
-    <string name="message_demo">Email di esempio</string>
+    <string name="working">Connessione a Outlook…</string>
+    <string name="connect_outlook">Collega il tuo account Microsoft per leggere e inviare email.</string>
+    <string name="outlook_configuration_required">Outlook non è configurato. Aggiungi la registrazione Microsoft a local.properties e ricompila.</string>
+    <string name="sign_in_outlook">Accedi con Microsoft</string>
+    <string name="sign_out">Disconnetti</string>
+    <string name="refresh_mail">Aggiorna posta</string>
+    <string name="open_attachments">Apri allegati in Outlook</string>
+    <string name="send_message">Invia</string>
+    <string name="error_authentication">È necessario accedere a Microsoft. Accedi di nuovo per continuare.</string>
+    <string name="error_network">Impossibile raggiungere Outlook. Controlla la connessione e riprova.</string>
+    <string name="error_throttled">Outlook sta limitando le richieste. Attendi prima di riprovare.</string>
+    <string name="error_rejected">Outlook ha rifiutato l’operazione. Verifica le autorizzazioni dell’account e riprova.</string>
+    <string name="error_response">Outlook ha restituito una risposta non supportata. Aggiorna la casella.</string>
+    <string name="error_send_uncertain">Impossibile confermare l’invio. Controlla la posta inviata su Outlook prima di inviare di nuovo.</string>
+    <string name="message_sent">Outlook ha accettato il messaggio per l’invio</string>
+    <string name="send_notice">Il messaggio verrà inviato dal tuo account Microsoft.</string>
 </resources>
