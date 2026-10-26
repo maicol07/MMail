@@ -16,6 +16,7 @@ data class Mail(
     val hasAttachments: Boolean = false,
     val recipient: String = "",
     val webLink: String = "",
+    val htmlBody: String? = null,
 )
 
 data class MailboxState(

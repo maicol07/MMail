@@ -64,4 +64,17 @@
     <string name="error_send_uncertain">Impossibile confermare l’invio. Controlla la posta inviata su Outlook prima di inviare di nuovo.</string>
     <string name="message_sent">Outlook ha accettato il messaggio per l’invio</string>
     <string name="send_notice">Il messaggio verrà inviato dal tuo account Microsoft.</string>
+    <string name="settings">Impostazioni</string>
+    <string name="content_options">Opzioni del contenuto</string>
+    <string name="rendering_defaults">Permessi predefiniti per il contenuto dei messaggi. Le modifiche vengono salvate su questo dispositivo.</string>
+    <string name="message_content_scope">Questi permessi valgono solo per questo messaggio. Modifica i valori predefiniti nelle Impostazioni.</string>
+    <string name="load_images">Carica immagini</string>
+    <string name="load_images_description">Consenti immagini HTTPS e incorporate come dati. I mittenti possono rilevare quando apri un messaggio.</string>
+    <string name="allow_javascript">Consenti JavaScript</string>
+    <string name="allow_javascript_description">Esegui gli script del mittente. Gli script possono inviare dati tramite la rete.</string>
+    <string name="external_styles">Stili e caratteri esterni</string>
+    <string name="external_styles_description">Carica fogli di stile e caratteri tramite HTTPS. Questo contatta server esterni.</string>
+    <string name="show_plain_text">Mostra testo semplice</string>
+    <string name="show_html">Mostra messaggio formattato</string>
+    <string name="error_open_link">Nessuna app disponibile per aprire questo link.</string>
 </resources>

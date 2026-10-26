@@ -38,6 +38,7 @@ fun FolderNavigation(
     onCompose: () -> Unit,
     account: String,
     onSignOut: () -> Unit,
+    onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 16.dp, vertical = 24.dp).verticalScroll(rememberScrollState())
@@ -85,6 +86,10 @@ fun FolderNavigation(
                 modifier = Modifier.padding(vertical = 2.dp),
             )
         }
+        NavigationDrawerItem(
+            label = { Text(stringResource(Res.string.settings)) }, selected = false, onClick = onSettings,
+            icon = { Icon(Icons.SettingsW500Rounded, null) },
+        )
         Spacer(Modifier.height(40.dp))
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             SenderAvatar(account, 0)

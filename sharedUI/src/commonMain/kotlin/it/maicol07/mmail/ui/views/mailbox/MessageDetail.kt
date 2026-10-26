@@ -7,7 +7,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -16,10 +17,12 @@ import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.Icons
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.icons.*
 import it.maicol07.mmail.data.Folder
 import it.maicol07.mmail.data.Mail
+import it.maicol07.mmail.data.RenderingOptions
 import it.maicol07.mmail.resources.*
 import it.maicol07.mmail.ui.components.MailAction
 import it.maicol07.mmail.ui.components.SenderAvatar
 import it.maicol07.mmail.ui.components.AttachmentChip
+import it.maicol07.mmail.ui.components.MessageBody
 import it.maicol07.mmail.ui.components.mailSharedBounds
 import org.jetbrains.compose.resources.stringResource
 
@@ -27,8 +30,15 @@ import org.jetbrains.compose.resources.stringResource
 fun SharedTransitionScope.MessageDetail(
     mail: Mail, onAttachment: () -> Unit,
     visibilityScope: AnimatedVisibilityScope?,
+    renderingDefaults: RenderingOptions = RenderingOptions(),
     modifier: Modifier = Modifier,
 ) {
+    var images by rememberSaveable(mail.id, renderingDefaults.images) { mutableStateOf(renderingDefaults.images) }
+    var javaScript by rememberSaveable(mail.id, renderingDefaults.javaScript) { mutableStateOf(renderingDefaults.javaScript) }
+    var externalStyles by rememberSaveable(mail.id, renderingDefaults.externalStyles) { mutableStateOf(renderingDefaults.externalStyles) }
+    var contentOptions by rememberSaveable(mail.id) { mutableStateOf(false) }
+    var plainText by rememberSaveable(mail.id) { mutableStateOf(false) }
+    val options = RenderingOptions(images, javaScript, externalStyles)
     Surface(modifier, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -48,7 +58,20 @@ fun SharedTransitionScope.MessageDetail(
                 }
                 Text(mail.time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(mail.body, style = MaterialTheme.typography.bodyLarge)
+            val html = mail.htmlBody
+            if (html != null) {
+                Column {
+                    TextButton(onClick = { contentOptions = !contentOptions }) { Text(stringResource(Res.string.content_options)) }
+                    if (contentOptions) {
+                        Text(stringResource(Res.string.message_content_scope), style = MaterialTheme.typography.bodySmall)
+                        RenderingOptionsControls(options) { images = it.images; javaScript = it.javaScript; externalStyles = it.externalStyles }
+                    }
+                    TextButton(onClick = { plainText = !plainText }) {
+                        Text(stringResource(if (plainText) Res.string.show_html else Res.string.show_plain_text))
+                    }
+                }
+            }
+            MessageBody(mail.body, html, plainText, options, Modifier.fillMaxWidth())
             if (mail.hasAttachments) {
                 AttachmentChip(stringResource(Res.string.open_attachments), onAttachment, mailSharedBounds(mail.id to "attachment", visibilityScope))
             }

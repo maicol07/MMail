@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.test.assertNull
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -54,7 +55,7 @@ class GraphClientTest {
             val request = server.takeRequest(1, TimeUnit.SECONDS)!!
             assertEquals("Bearer test-token", request.getHeader("Authorization"))
             assertTrue(request.getHeader("Prefer")!!.contains("ImmutableId"))
-            assertTrue(request.getHeader("Prefer")!!.contains("body-content-type=\"text\""))
+            assertEquals("IdType=\"ImmutableId\"", request.getHeader("Prefer"))
             assertEquals("receivedDateTime desc", request.requestUrl!!.queryParameter("\$orderby"))
             assertTrue("body" !in request.requestUrl!!.queryParameter("\$select")!!.split(","))
             repeat(3) { server.takeRequest() }
@@ -76,11 +77,20 @@ class GraphClientTest {
             val client = GraphClient({ "test-token" }, server.url("/v1.0/"))
             val summary = decodeMail(message(), Folder.Inbox, "Preview")
             server.enqueue(MockResponse().setBody(message().toString()))
-            assertEquals("Full body", client.loadMessage(summary).body)
+            val plain = client.loadMessage(summary)
+            assertEquals("Full body", plain.body)
+            assertNull(plain.htmlBody)
             val request = server.takeRequest()
             assertEquals("/v1.0/me/messages/immutable%2Fid=", request.path)
-            assertTrue(request.getHeader("Prefer")!!.contains("body-content-type=\"text\""))
-            server.enqueue(MockResponse().setBody(message().put("body", JSONObject().put("contentType", "html").put("content", "<b>Body</b>")).toString()))
+            assertEquals("IdType=\"ImmutableId\"", request.getHeader("Prefer"))
+            val html = "<html><head><title>Hidden title</title><style>p{color:red}</style></head><body><p>Body &amp; café</p><script>secret()</script></body></html>"
+            server.enqueue(MockResponse().setBody(message().put("body", JSONObject().put("contentType", "HTML").put("content", html)).toString()))
+            val formatted = client.loadMessage(summary)
+            assertEquals("Body & café", formatted.body)
+            assertEquals(html, formatted.htmlBody)
+            assertTrue(MailboxState(listOf(formatted)).messagesIn(Folder.Inbox, "café", MailFilter.All).isNotEmpty())
+            assertTrue(MailboxState(listOf(formatted)).messagesIn(Folder.Inbox, "<p>", MailFilter.All).isEmpty())
+            server.enqueue(MockResponse().setBody(message().put("body", JSONObject().put("contentType", "rtf").put("content", "unsupported")).toString()))
             assertEquals(MailFailure.InvalidResponse, assertFailsWith<MailProviderException> { client.loadMessage(summary) }.failure)
             server.enqueue(MockResponse().setBody(message().put("id", "different").toString()))
             assertEquals(MailFailure.InvalidResponse, assertFailsWith<MailProviderException> { client.loadMessage(summary) }.failure)

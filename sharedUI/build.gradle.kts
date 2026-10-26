@@ -39,6 +39,8 @@ kotlin {
             implementation(libs.androidx.activityCompose)
             implementation(libs.msal)
             implementation(libs.okhttp)
+            implementation(libs.jsoup)
+            implementation(libs.compose.webview)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.json)
@@ -59,6 +61,6 @@ symbolCraft {
     generatePreview = false
     materialSymbols(
         "mail", "inbox", "star", "send", "archive", "delete", "edit", "search",
-        "close", "arrow_back", "reply", "menu", "filter_list", "attach_file",
+        "close", "arrow_back", "reply", "menu", "filter_list", "attach_file", "settings",
     ) { bothFills(500, SymbolVariant.ROUNDED) }
 }

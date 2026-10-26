@@ -64,4 +64,17 @@
     <string name="error_send_uncertain">Sending could not be confirmed. Check Sent mail in Outlook before sending again.</string>
     <string name="message_sent">Outlook accepted the message for sending</string>
     <string name="send_notice">This message will be sent from your Microsoft account.</string>
+    <string name="settings">Settings</string>
+    <string name="content_options">Content options</string>
+    <string name="rendering_defaults">Default content permissions for messages. Changes are saved on this device.</string>
+    <string name="message_content_scope">These permissions apply only to this message. Change defaults in Settings.</string>
+    <string name="load_images">Load images</string>
+    <string name="load_images_description">Allow HTTPS and embedded data images. Senders may track when you open a message.</string>
+    <string name="allow_javascript">Allow JavaScript</string>
+    <string name="allow_javascript_description">Run scripts from the sender. Scripts can send data over the network.</string>
+    <string name="external_styles">External styles and fonts</string>
+    <string name="external_styles_description">Load stylesheets and fonts over HTTPS. This contacts external servers.</string>
+    <string name="show_plain_text">Show plain text</string>
+    <string name="show_html">Show formatted message</string>
+    <string name="error_open_link">No app is available to open this link.</string>
 </resources>

@@ -19,6 +19,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import org.jsoup.Jsoup
 
 internal class GraphClient(
     private val token: suspend () -> String,
@@ -74,10 +75,15 @@ internal class GraphClient(
         val value = request("GET", messageUrl(mail.id))
         try {
             val body = value.getJSONObject("body")
-            if (!body.getString("contentType").equals("text", ignoreCase = true) || value.getString("id") != mail.id) {
+            if (value.getString("id") != mail.id) {
                 throw MailProviderException(MailFailure.InvalidResponse)
             }
-            return decodeMail(value, mail.folder, body.getString("content"))
+            val content = body.getString("content")
+            return when (body.getString("contentType").lowercase()) {
+                "text" -> decodeMail(value, mail.folder, content)
+                "html" -> decodeMail(value, mail.folder, Jsoup.parse(content).body().text()).copy(htmlBody = content)
+                else -> throw MailProviderException(MailFailure.InvalidResponse)
+            }
         } catch (exception: JSONException) {
             throw MailProviderException(MailFailure.InvalidResponse, exception)
         }
@@ -121,7 +127,7 @@ internal class GraphClient(
                 try {
                     val request = Request.Builder().url(url)
                         .header("Authorization", "Bearer $accessToken")
-                        .header("Prefer", "IdType=\"ImmutableId\", outlook.body-content-type=\"text\"")
+                        .header("Prefer", "IdType=\"ImmutableId\"")
                         .method(method, body?.toString()?.toRequestBody("application/json; charset=utf-8".toMediaType())).build()
                     return@withContext client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) throw MailProviderException(when {

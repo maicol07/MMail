@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun App(provider: MailProvider) {
+fun App(provider: MailProvider, renderingPreferences: RenderingPreferences = rememberRenderingPreferences()) {
     var mailbox by remember { mutableStateOf(MailboxState()) }
     var account by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -39,6 +39,7 @@ fun App(provider: MailProvider) {
     var replyTo by rememberSaveable { mutableStateOf<String?>(null) }
     var composing by rememberSaveable { mutableStateOf(false) }
     var showingFilters by rememberSaveable { mutableStateOf(false) }
+    var showingSettings by rememberSaveable { mutableStateOf(false) }
     var recipient by rememberSaveable { mutableStateOf("") }
     var subject by rememberSaveable { mutableStateOf("") }
     var body by rememberSaveable { mutableStateOf("") }
@@ -126,10 +127,14 @@ fun App(provider: MailProvider) {
             selectedId = null
             scope.launch { drawerState.close() }
         }
+        val openSettings: () -> Unit = {
+            showingSettings = true
+            scope.launch { drawerState.close() }
+        }
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val permanentNavigation = maxWidth >= 1200.dp
             val twoPanes = maxWidth >= 840.dp
-            PlatformBackHandler(!composing && !showingFilters && selectedId != null && !twoPanes) { selectedId = null }
+            PlatformBackHandler(!composing && !showingFilters && !showingSettings && selectedId != null && !twoPanes) { selectedId = null }
             ModalNavigationDrawer(
                 drawerState = drawerState, gesturesEnabled = !permanentNavigation,
                 drawerContent = {
@@ -137,7 +142,7 @@ fun App(provider: MailProvider) {
                         FolderNavigation(mailbox, folder, selectFolder, {
                             scope.launch { drawerState.close() }
                             composing = true
-                        }, account.orEmpty(), signOut, Modifier.width(280.dp).fillMaxHeight())
+                        }, account.orEmpty(), signOut, openSettings, Modifier.width(280.dp).fillMaxHeight())
                     }
                 },
             ) {
@@ -162,7 +167,7 @@ fun App(provider: MailProvider) {
                     )
                     Row(Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(contentPadding)) {
                         if (permanentNavigation) {
-                            FolderNavigation(mailbox, folder, selectFolder, { composing = true }, account.orEmpty(), signOut,
+                            FolderNavigation(mailbox, folder, selectFolder, { composing = true }, account.orEmpty(), signOut, openSettings,
                                 Modifier.width(264.dp).fillMaxHeight())
                         }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -292,6 +297,7 @@ fun App(provider: MailProvider) {
                                                 mail,
                                                 onAttachment = { perform { provider.openAttachments(mail) } },
                                                 visibilityScope = if (twoPanes) null else this,
+                                                renderingDefaults = renderingPreferences.options,
                                                 modifier = Modifier.fillMaxSize(),
                                             )
                                         } else {
@@ -313,6 +319,7 @@ fun App(provider: MailProvider) {
                 }
             }
         }
+        if (showingSettings) RenderingSettingsSheet(renderingPreferences.options, renderingPreferences::update) { showingSettings = false }
         if (showingFilters) FilterSheet(
             filter = filter,
             onFilter = { filter = it; selectedId = null },

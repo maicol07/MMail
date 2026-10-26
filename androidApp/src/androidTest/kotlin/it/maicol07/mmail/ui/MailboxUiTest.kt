@@ -41,6 +41,7 @@ class MailboxUiTest(
     @get:Rule
     val compose = createComposeRule()
     private val provider = TestMailProvider()
+    private val renderingPreferences = RenderingPreferences(RenderingOptions()) { }
     private val originalLocale = java.util.Locale.getDefault()
 
     @Before
@@ -57,7 +58,7 @@ class MailboxUiTest(
     private fun showApp() {
         compose.setContent {
             DeviceConfigurationOverride(DeviceConfigurationOverride.Locales(LocaleList(languageTag))) {
-                Box(Modifier.requiredSize(400.dp, 800.dp).testTag("mailbox-root")) { App(provider) }
+                Box(Modifier.requiredSize(400.dp, 800.dp).testTag("mailbox-root")) { App(provider, renderingPreferences) }
             }
         }
     }
@@ -125,9 +126,82 @@ class MailboxUiTest(
         compose.onNodeWithText(provider.message.subject).assertIsDisplayed()
         compose.onNodeWithText(attachments).assertHasClickAction()
     }
+
+    @Test
+    fun htmlBodyKeepsAttachmentsAndBackNavigationReachable() {
+        provider.htmlBody = "<h1>Formatted email</h1><table><tr><td><b>HTML content</b></td></tr></table>" +
+            "<p>Long paragraph for scrolling</p>".repeat(40)
+        showApp()
+        compose.onNodeWithText(provider.message.subject).performClick()
+        compose.onNodeWithTag("message-html").assertExists()
+        compose.onNodeWithText(attachments).performScrollTo().assertHasClickAction().performClick()
+        compose.runOnIdle { assertEquals(1, provider.attachmentsOpened) }
+        compose.onNodeWithContentDescription(back).performClick()
+        compose.onNodeWithText(provider.message.subject).assertIsDisplayed()
+    }
+
+    @Test
+    fun messagePermissionsRemainLocalAndPlainTextCanReplaceHtml() {
+        provider.htmlBody = "<p>Formatted content</p>"
+        val content = if (languageTag == "it") "Opzioni del contenuto" else "Content options"
+        val images = if (languageTag == "it") "Carica immagini" else "Load images"
+        val plain = if (languageTag == "it") "Mostra testo semplice" else "Show plain text"
+        showApp()
+        compose.onNodeWithText(provider.message.subject).performClick()
+        compose.onNodeWithText(content).performClick()
+        compose.onNodeWithText(images).performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.runOnIdle { assertEquals(RenderingOptions(), renderingPreferences.options) }
+        compose.onNodeWithText(plain).performScrollTo().performClick()
+        compose.onNodeWithTag("message-html").assertDoesNotExist()
+        compose.onNodeWithText(provider.message.body).assertExists()
+    }
+
+    @Test
+    fun plainTextToHtmlKeepsTheOpenMessageAndDoesNotReloadTheMailbox() {
+        provider.fullBody = "Notification paragraph\n".repeat(100)
+        provider.htmlBody = "<p>Notification paragraph</p>".repeat(60)
+        val plain = if (languageTag == "it") "Mostra testo semplice" else "Show plain text"
+        val formatted = if (languageTag == "it") "Mostra messaggio formattato" else "Show formatted message"
+        showApp()
+        compose.onNodeWithText(provider.message.subject).performClick()
+        compose.onNodeWithText(plain).performScrollTo().performClick()
+        val toggle = compose.onNodeWithText(formatted).performScrollTo()
+        val previousTop = toggle.getUnclippedBoundsInRoot().top.value
+        toggle.performClick()
+        compose.waitUntil(10_000) {
+            val bounds = compose.onNodeWithTag("message-html").getUnclippedBoundsInRoot()
+            bounds.bottom.value - bounds.top.value > 100f
+        }
+        compose.onNodeWithContentDescription(back).assertIsDisplayed()
+        compose.onNodeWithText(provider.message.subject).assertExists()
+        assertEquals(previousTop, compose.onNodeWithText(plain).getUnclippedBoundsInRoot().top.value, 1f)
+        compose.runOnIdle {
+            assertEquals(1, provider.mailboxLoads)
+            assertEquals(1, provider.messageLoads)
+        }
+    }
+
+    @Test
+    fun settingsDefaultsApplyWhenOpeningAnHtmlMessage() {
+        provider.htmlBody = "<p>Formatted content</p>"
+        val menu = if (languageTag == "it") "Apri cartelle" else "Open folders"
+        val settings = if (languageTag == "it") "Impostazioni" else "Settings"
+        val images = if (languageTag == "it") "Carica immagini" else "Load images"
+        val close = if (languageTag == "it") "Chiudi" else "Close"
+        val content = if (languageTag == "it") "Opzioni del contenuto" else "Content options"
+        showApp()
+        compose.onNodeWithContentDescription(menu).performClick()
+        compose.onNodeWithText(settings).performScrollTo().performClick()
+        compose.onNodeWithText(images).performScrollTo().performClick().assertIsOn()
+        compose.runOnIdle { assertEquals(RenderingOptions(images = true), renderingPreferences.options) }
+        compose.onNodeWithText(close).performScrollTo().performClick()
+        compose.onNodeWithText(provider.message.subject).performClick()
+        compose.onNodeWithText(content).performClick()
+        compose.onNodeWithText(images).performScrollTo().assertIsOn()
+    }
 }
 
-private class TestMailProvider : MailProvider {
+internal class TestMailProvider : MailProvider {
     val message = Mail("test-id", "Test sender", "sender@example.com", "Test subject", "Test body", "10:00", unread = true, hasAttachments = true)
     val olderMessage = message.copy(id = "older-id", subject = "Older subject", unread = false, hasAttachments = false)
     private var mailbox = MailboxState(listOf(message.copy(body = "Preview")) + (1..19).map {
@@ -137,6 +211,9 @@ private class TestMailProvider : MailProvider {
     var pagesLoaded = 0
     var mailboxLoads = 0
     var failNextPage = false
+    var htmlBody: String? = null
+    var fullBody = message.body
+    var messageLoads = 0
     var nextPageGate: CompletableDeferred<Unit>? = null
     override val configured = true
     override suspend fun restoreAccount(): String = "test@example.com"
@@ -153,7 +230,10 @@ private class TestMailProvider : MailProvider {
         this.mailbox = mailbox.copy(messages = mailbox.messages + olderMessage, nextPages = mailbox.nextPages - folder)
         return this.mailbox
     }
-    override suspend fun loadMessage(mail: Mail): Mail = mail.copy(body = message.body)
+    override suspend fun loadMessage(mail: Mail): Mail {
+        messageLoads++
+        return mail.copy(body = fullBody, htmlBody = htmlBody)
+    }
     override suspend fun markRead(id: String) { mailbox = mailbox.markRead(id) }
     override suspend fun setStarred(id: String, starred: Boolean) { mailbox = mailbox.toggleStar(id) }
     override suspend fun move(id: String, destination: Folder) { mailbox = mailbox.move(id, destination) }
