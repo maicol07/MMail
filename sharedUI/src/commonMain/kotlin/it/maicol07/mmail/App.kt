@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.window.Dialog
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.Icons
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.icons.*
 import it.maicol07.mmail.data.*
@@ -79,22 +78,14 @@ fun App(provider: MailProvider) {
     LaunchedEffect(folder, filter, query) { listScrollState.scrollToItem(0) }
 
     AppTheme(isSystemInDarkTheme()) {
-        if (busy) Dialog(onDismissRequest = {}) {
-            Surface(shape = RoundedCornerShape(24.dp)) {
-                Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(16.dp))
-                    Text(stringResource(if (account == null) Res.string.working else Res.string.loading_mail))
-                }
-            }
-        }
         if (account == null) {
             Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.headlineLarge)
                 Spacer(Modifier.height(24.dp))
                 Text(stringResource(if (provider.configured) Res.string.connect_outlook else Res.string.outlook_configuration_required))
                 failure?.let { Text(stringResource(it.title), color = MaterialTheme.colorScheme.error) }
-                Button(onClick = { perform { account = provider.signIn(); refreshMailbox() } }, enabled = provider.configured && !busy) {
+                if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 16.dp))
+                Button(shapes = ButtonDefaults.shapes(), onClick = { perform { account = provider.signIn(); refreshMailbox() } }, enabled = provider.configured && !busy) {
                     Text(stringResource(Res.string.sign_in_outlook))
                 }
             }
@@ -145,7 +136,7 @@ fun App(provider: MailProvider) {
                         FolderNavigation(mailbox, folder, selectFolder, {
                             scope.launch { drawerState.close() }
                             composing = true
-                        }, account.orEmpty(), signOut, { perform { refreshMailbox() } }, Modifier.width(280.dp).fillMaxHeight())
+                        }, account.orEmpty(), signOut, Modifier.width(280.dp).fillMaxHeight())
                     }
                 },
             ) {
@@ -165,51 +156,93 @@ fun App(provider: MailProvider) {
                     Row(Modifier.fillMaxSize().padding(padding)) {
                         if (permanentNavigation) {
                             FolderNavigation(mailbox, folder, selectFolder, { composing = true }, account.orEmpty(), signOut,
-                                { perform { refreshMailbox() } }, Modifier.width(264.dp).fillMaxHeight())
+                                Modifier.width(264.dp).fillMaxHeight())
                         }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                if (!permanentNavigation) {
-                                    MailAction(Icons.MenuW500Rounded, stringResource(Res.string.menu), { scope.launch { drawerState.open() } })
-                                }
-                                OutlinedTextField(
-                                    value = query, onValueChange = { query = it },
-                                    modifier = Modifier.weight(1f), shape = CircleShape, singleLine = true,
-                                    placeholder = { Text(stringResource(Res.string.search)) },
-                                    leadingIcon = { Icon(Icons.SearchW500Rounded, null) },
-                                    trailingIcon = {
-                                        if (query.isNotEmpty()) MailAction(Icons.CloseW500Rounded, stringResource(Res.string.clear_search), { query = "" })
+                            if (selected != null) {
+                                MessageToolbar(
+                                    selected, onBack = { selectedId = null },
+                                    onStar = { toggleStar(selected.id) },
+                                    onMove = { destination ->
+                                        val previousFolder = selected.folder
+                                        perform {
+                                            provider.move(selected.id, destination)
+                                            mailbox = mailbox.move(selected.id, destination)
+                                            selectedId = null
+                                            scope.launch {
+                                                val result = snackbar.showSnackbar(
+                                                    when (destination) {
+                                                        Folder.Archive -> archived
+                                                        Folder.Trash -> trashed
+                                                        else -> restored
+                                                    }, actionLabel = undo,
+                                                )
+                                                if (result == SnackbarResult.ActionPerformed) perform {
+                                                    provider.move(selected.id, previousFolder)
+                                                    mailbox = mailbox.move(selected.id, previousFolder)
+                                                }
+                                            }
+                                        }
                                     },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    ),
+                                    onReply = {
+                                        if (recipient.isBlank() && subject.isBlank() && body.isBlank()) {
+                                            recipient = selected.address
+                                            subject = if (selected.subject.startsWith("Re: ")) selected.subject else "Re: ${selected.subject}"
+                                            replyTo = selected.id
+                                        } else scope.launch { snackbar.showSnackbar(draftResumed) }
+                                        composing = true
+                                    },
                                 )
-                                BadgedBox(badge = { if (filter != MailFilter.All) Badge() }) {
-                                    MailAction(
-                                        Icons.FilterListW500Rounded,
-                                        if (filter == MailFilter.All) stringResource(Res.string.filters)
-                                        else stringResource(Res.string.filters_active, stringResource(filter.title)),
-                                        { showingFilters = true },
+                            } else {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    if (!permanentNavigation) {
+                                        MailAction(Icons.MenuW500Rounded, stringResource(Res.string.menu), { scope.launch { drawerState.open() } })
+                                    }
+                                    OutlinedTextField(
+                                        value = query, onValueChange = { query = it },
+                                        modifier = Modifier.weight(1f), shape = CircleShape, singleLine = true,
+                                        placeholder = { Text(stringResource(Res.string.search)) },
+                                        leadingIcon = { Icon(Icons.SearchW500Rounded, null) },
+                                        trailingIcon = {
+                                            if (query.isNotEmpty()) MailAction(Icons.CloseW500Rounded, stringResource(Res.string.clear_search), { query = "" })
+                                        },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        ),
                                     )
+                                    BadgedBox(badge = { if (filter != MailFilter.All) Badge() }) {
+                                        MailAction(
+                                            Icons.FilterListW500Rounded,
+                                            if (filter == MailFilter.All) stringResource(Res.string.filters)
+                                            else stringResource(Res.string.filters_active, stringResource(filter.title)),
+                                            { showingFilters = true },
+                                        )
+                                    }
                                 }
+                            }
+                            Box(Modifier.fillMaxWidth().height(4.dp)) {
+                                if (busy) LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                             failure?.let { error ->
                                 Text(stringResource(error.title), modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
                                 if (error == MailFailure.Authentication) TextButton(onClick = {
                                     perform { account = provider.signIn(); refreshMailbox() }
-                                }) { Text(stringResource(Res.string.sign_in_outlook)) }
+                                }, shapes = ButtonDefaults.shapes()) { Text(stringResource(Res.string.sign_in_outlook)) }
                             }
                             SharedTransitionLayout(Modifier.weight(1f).padding(end = if (twoPanes) 16.dp else 0.dp, bottom = 12.dp)) {
                                 val fadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
                                 val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
                                 val transition = updateTransition(selectedId, label = "Mail navigation")
                                 // Mark read after opening so unread filtering does not remove the shared source mid-transition.
-                                LaunchedEffect(transition.currentState) {
+                                LaunchedEffect(transition.currentState, busy) {
+                                    if (busy || failure != null) return@LaunchedEffect
                                     mailbox.messages.find { it.id == transition.currentState && it.unread }?.let { mail ->
                                         perform { provider.markRead(mail.id); mailbox = mailbox.markRead(mail.id) }
                                     }
@@ -217,14 +250,18 @@ fun App(provider: MailProvider) {
                                 val listContent: @Composable (AnimatedVisibilityScope?, Modifier) -> Unit = { visibilityScope, modifier ->
                                     MessageList(
                                         messages, folder, filter, query, if (twoPanes) selectedId else null,
-                                        onOpen = { mail -> perform {
-                                            val full = provider.loadMessage(mail)
-                                            mailbox = mailbox.copy(messages = mailbox.messages.map { if (it.id == full.id) full else it })
-                                            selectedId = full.id
-                                        } },
+                                        onOpen = { mail ->
+                                            val openingFolder = folder
+                                            perform {
+                                                val full = provider.loadMessage(mail)
+                                                mailbox = mailbox.copy(messages = mailbox.messages.map { if (it.id == full.id) full else it })
+                                                if (folder == openingFolder) selectedId = full.id
+                                            }
+                                        },
                                         onStar = toggleStar,
                                         onAttachment = { mail -> perform { provider.openAttachments(mail) } },
-                                        hasMore = mailbox.hasMore(folder),
+                                        hasMore = mailbox.hasMore(folder), loading = busy, loadFailed = failure != null,
+                                        onRefresh = { perform { refreshMailbox() } },
                                         onLoadMore = { perform { mailbox = provider.loadMore(mailbox, folder) } },
                                         scrollState = listScrollState, visibilityScope = visibilityScope, modifier = modifier,
                                     )
@@ -245,37 +282,7 @@ fun App(provider: MailProvider) {
                                             listContent(this, Modifier.fillMaxSize())
                                         } else if (mail != null) {
                                             MessageDetail(
-                                                mail, !twoPanes, onBack = { selectedId = null },
-                                                onStar = { toggleStar(mail.id) },
-                                                onMove = { destination ->
-                                                    val previousFolder = mail.folder
-                                                    perform {
-                                                        provider.move(mail.id, destination)
-                                                        mailbox = mailbox.move(mail.id, destination)
-                                                        selectedId = null
-                                                        scope.launch {
-                                                            val result = snackbar.showSnackbar(
-                                                                when (destination) {
-                                                                    Folder.Archive -> archived
-                                                                    Folder.Trash -> trashed
-                                                                    else -> restored
-                                                                }, actionLabel = undo,
-                                                            )
-                                                            if (result == SnackbarResult.ActionPerformed) perform {
-                                                                provider.move(mail.id, previousFolder)
-                                                                mailbox = mailbox.move(mail.id, previousFolder)
-                                                            }
-                                                        }
-                                                    }
-                                                },
-                                                onReply = {
-                                                    if (recipient.isBlank() && subject.isBlank() && body.isBlank()) {
-                                                        recipient = mail.address
-                                                        subject = if (mail.subject.startsWith("Re: ")) mail.subject else "Re: ${mail.subject}"
-                                                        replyTo = mail.id
-                                                    } else scope.launch { snackbar.showSnackbar(draftResumed) }
-                                                    composing = true
-                                                },
+                                                mail,
                                                 onAttachment = { perform { provider.openAttachments(mail) } },
                                                 visibilityScope = if (twoPanes) null else this,
                                                 modifier = Modifier.fillMaxSize(),

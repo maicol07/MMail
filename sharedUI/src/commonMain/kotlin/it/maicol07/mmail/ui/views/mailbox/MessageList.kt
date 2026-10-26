@@ -12,13 +12,16 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,101 +38,122 @@ import it.maicol07.mmail.ui.components.mailSharedBounds
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 fun SharedTransitionScope.MessageList(
     messages: List<Mail>, folder: Folder, filter: MailFilter, query: String, selectedId: String?,
     onOpen: (Mail) -> Unit, onStar: (String) -> Unit, onAttachment: (Mail) -> Unit,
-    hasMore: Boolean, onLoadMore: () -> Unit,
+    hasMore: Boolean, loading: Boolean, loadFailed: Boolean,
+    onLoadMore: () -> Unit, onRefresh: () -> Unit,
     scrollState: LazyListState, visibilityScope: AnimatedVisibilityScope?,
     modifier: Modifier = Modifier,
 ) {
     val fadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-    Column(modifier) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(folder.title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
-            Text(
-                stringResource(Res.string.message_count, messages.size) + " · " +
-                    stringResource(Res.string.unread_count, messages.count { it.unread }),
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(stringResource(Res.string.loaded_messages_hint), style = MaterialTheme.typography.bodySmall)
-            if (hasMore) {
-                TextButton(onClick = onLoadMore) { Text(stringResource(Res.string.load_more)) }
-            }
+    val reachedEnd by remember(scrollState) {
+        derivedStateOf {
+            val layout = scrollState.layoutInfo
+            layout.totalItemsCount > 0 &&
+                layout.visibleItemsInfo.lastOrNull()?.index == layout.totalItemsCount - 1
         }
-        if (messages.isEmpty()) {
-            MailEmptyState(
-                Icons.SearchW500Rounded,
-                stringResource(if (query.isBlank() && filter == MailFilter.All) Res.string.no_messages else Res.string.no_results),
-                stringResource(if (query.isBlank() && filter == MailFilter.All) Res.string.empty_folder else Res.string.try_search),
-                Modifier.fillMaxSize(),
-            )
-        } else {
-            LazyColumn(
-                state = scrollState,
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                itemsIndexed(messages, key = { _, mail -> mail.id }) { index, mail ->
-                    val shape = RoundedCornerShape(
-                        topStart = if (index == 0) 24.dp else 6.dp,
-                        topEnd = if (index == 0) 24.dp else 6.dp,
-                        bottomStart = if (index == messages.lastIndex) 24.dp else 6.dp,
-                        bottomEnd = if (index == messages.lastIndex) 24.dp else 6.dp,
+    }
+    LaunchedEffect(reachedEnd, hasMore, loading, loadFailed, messages.size) {
+        if (reachedEnd && hasMore && !loading && !loadFailed) onLoadMore()
+    }
+    val refreshLabel = stringResource(Res.string.refresh_mail)
+    val loadMoreLabel = stringResource(Res.string.load_more)
+    PullToRefreshBox(isRefreshing = loading, onRefresh = onRefresh, modifier = modifier) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().testTag("message-list").semantics {
+                customActions = buildList {
+                    add(CustomAccessibilityAction(refreshLabel) { onRefresh(); true })
+                    if (hasMore) add(CustomAccessibilityAction(loadMoreLabel) { onLoadMore(); true })
+                }
+            },
+            state = scrollState,
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            item {
+                Column(
+                    Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(stringResource(folder.title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(Res.string.message_count, messages.size) + " · " +
+                            stringResource(Res.string.unread_count, messages.count { it.unread }),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    val selected = selectedId == mail.id
-                    val containerColor by animateColorAsState(
-                        targetValue = when {
-                            selected -> MaterialTheme.colorScheme.secondaryContainer
-                            mail.unread -> MaterialTheme.colorScheme.surfaceContainerLowest
-                            else -> MaterialTheme.colorScheme.surfaceContainerLow
-                        },
-                        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                }
+            }
+            if (messages.isEmpty()) {
+                item {
+                    MailEmptyState(
+                        Icons.SearchW500Rounded,
+                        stringResource(if (query.isBlank() && filter == MailFilter.All) Res.string.no_messages else Res.string.no_results),
+                        stringResource(if (query.isBlank() && filter == MailFilter.All) Res.string.empty_folder else Res.string.try_search),
+                        Modifier.fillParentMaxHeight(0.7f),
                     )
-                    Surface(
-                        shape = shape,
-                        color = containerColor,
-                        modifier = Modifier.fillMaxWidth().animateItem(
-                            fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec,
-                        ).semantics { this.selected = selected },
+                }
+            }
+            itemsIndexed(messages, key = { _, mail -> mail.id }) { index, mail ->
+                val shape = RoundedCornerShape(
+                    topStart = if (index == 0) 24.dp else 6.dp,
+                    topEnd = if (index == 0) 24.dp else 6.dp,
+                    bottomStart = if (index == messages.lastIndex) 24.dp else 6.dp,
+                    bottomEnd = if (index == messages.lastIndex) 24.dp else 6.dp,
+                )
+                val selected = selectedId == mail.id
+                val containerColor by animateColorAsState(
+                    targetValue = when {
+                        selected -> MaterialTheme.colorScheme.secondaryContainer
+                        mail.unread -> MaterialTheme.colorScheme.surfaceContainerLowest
+                        else -> MaterialTheme.colorScheme.surfaceContainerLow
+                    },
+                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                )
+                Surface(
+                    shape = shape,
+                    color = containerColor,
+                    modifier = Modifier.fillMaxWidth().animateItem(
+                        fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec,
+                    ).semantics { this.selected = selected },
+                ) {
+                    Row(
+                        Modifier.clickable(onClick = { onOpen(mail) }).padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Row(
-                            Modifier.clickable(onClick = { onOpen(mail) }).padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            SenderAvatar(mail.sender, mail.id.hashCode(), mailSharedBounds(mail.id to "avatar", visibilityScope))
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        mail.sender, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = if (mail.unread) FontWeight.Bold else FontWeight.Medium,
-                                    )
-                                    if (mail.unread) Box(Modifier.padding(horizontal = 6.dp).size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                                    Text(mail.time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                        SenderAvatar(mail.sender, mail.id.hashCode(), mailSharedBounds(mail.id to "avatar", visibilityScope))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    mail.subject, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                    modifier = mailSharedBounds(mail.id to "subject", visibilityScope),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (mail.unread) FontWeight.SemiBold else FontWeight.Normal,
+                                    mail.sender, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = if (mail.unread) FontWeight.Bold else FontWeight.Medium,
                                 )
-                                Text(
-                                    mail.body.replace("\n", " "), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                if (mail.hasAttachments) {
-                                    AttachmentChip(stringResource(Res.string.open_attachments), { onAttachment(mail) }, mailSharedBounds(mail.id to "attachment", visibilityScope))
-                                }
+                                if (mail.unread) Box(Modifier.padding(horizontal = 6.dp).size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                                Text(mail.time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            MailAction(
-                                if (mail.starred) Icons.StarW500RoundedFill else Icons.StarW500Rounded,
-                                stringResource(if (mail.starred) Res.string.remove_star else Res.string.add_star),
-                                onClick = { onStar(mail.id) },
-                                modifier = Modifier.align(Alignment.CenterVertically),
+                            Text(
+                                mail.subject, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = mailSharedBounds(mail.id to "subject", visibilityScope),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (mail.unread) FontWeight.SemiBold else FontWeight.Normal,
                             )
+                            Text(
+                                mail.body.replace("\n", " "), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            if (mail.hasAttachments) {
+                                AttachmentChip(stringResource(Res.string.open_attachments), { onAttachment(mail) }, mailSharedBounds(mail.id to "attachment", visibilityScope))
+                            }
                         }
+                        MailAction(
+                            if (mail.starred) Icons.StarW500RoundedFill else Icons.StarW500Rounded,
+                            stringResource(if (mail.starred) Res.string.remove_star else Res.string.add_star),
+                            onClick = { onStar(mail.id) },
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                        )
                     }
                 }
             }

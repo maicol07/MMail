@@ -38,7 +38,6 @@ fun FolderNavigation(
     onCompose: () -> Unit,
     account: String,
     onSignOut: () -> Unit,
-    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 16.dp, vertical = 24.dp).verticalScroll(rememberScrollState())) {
@@ -94,7 +93,6 @@ fun FolderNavigation(
                 Text("Outlook", style = MaterialTheme.typography.bodySmall)
             }
         }
-        TextButton(onClick = onRefresh) { Text(stringResource(Res.string.refresh_mail)) }
-        TextButton(onClick = onSignOut) { Text(stringResource(Res.string.sign_out)) }
+        TextButton(onClick = onSignOut, shapes = ButtonDefaults.shapes()) { Text(stringResource(Res.string.sign_out)) }
     }
 }

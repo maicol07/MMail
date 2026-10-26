@@ -8,6 +8,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
@@ -26,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.Icons
 import io.github.kingsword09.symbolcraft.symbols.icons.materialsymbols.icons.AttachFileW500Rounded
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MailAction(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     TooltipBox(
@@ -34,7 +36,10 @@ fun MailAction(icon: ImageVector, label: String, onClick: () -> Unit, modifier: 
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
-        IconButton(onClick = onClick, modifier = modifier) { Icon(icon, contentDescription = label) }
+        IconButton(
+            onClick = onClick, modifier = modifier.size(48.dp),
+            shapes = IconButtonDefaults.shapes(),
+        ) { Icon(icon, contentDescription = label) }
     }
 }
 
